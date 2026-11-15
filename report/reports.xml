@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Shared pieces -->
+    <template id="report_style">
+        <style>
+            .cgr h2 { font-size: 20px; margin: 0 0 4px 0; }
+            .cgr .ref { font-family: monospace; color: #5b6b7c; font-size: 12px; letter-spacing: 1px; }
+            .cgr h4 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #0e7c86; margin: 18px 0 6px 0; border-bottom: 1px solid #d9e1e8; padding-bottom: 3px; }
+            .cgr p, .cgr li, .cgr td, .cgr th { font-size: 12px; line-height: 1.5; }
+            .cgr .pre { white-space: pre-line; }
+            .cgr table.kv td { padding: 3px 14px 3px 0; vertical-align: top; }
+            .cgr table.kv td.k { color: #5b6b7c; white-space: nowrap; }
+            .cgr table.grid { width: 100%; border-collapse: collapse; }
+            .cgr table.grid th { text-align: left; border-bottom: 2px solid #1b2733; padding: 4px 6px; font-size: 11px; text-transform: uppercase; }
+            .cgr table.grid td { border-bottom: 1px solid #e3e8ee; padding: 4px 6px; }
+            .cgr .sev { display: inline-block; padding: 1px 8px; border-radius: 9px; font-size: 11px; font-weight: bold; color: #fff; }
+            .cgr .sev-critical { background: #c9264b; } .cgr .sev-high { background: #d9730d; }
+            .cgr .sev-medium { background: #b58a00; } .cgr .sev-low { background: #2f6fb7; }
+            .cgr .box { border: 1px solid #d9e1e8; border-left: 4px solid #0e7c86; padding: 8px 12px; margin: 8px 0; }
+            .cgr .box.hypo { border-left-color: #8a5cf5; background: #f7f4ff; }
+            .cgr .note { color: #5b6b7c; font-size: 11px; }
+        </style>
+    </template>
+
+    <!-- ============================================================ AI ANALYSIS -->
+    <template id="report_analysis_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page cgr">
+                        <t t-call="cyberguard_360.report_style"/>
+                        <div class="ref"><t t-out="o.reference"/> · <t t-out="dict(o._fields['analysis_type'].selection)[o.analysis_type]"/></div>
+                        <h2 t-out="o.name"/>
+                        <table class="kv">
+                            <tr><td class="k">Severity</td><td><span t-attf-class="sev sev-{{o.severity}}" t-out="o.severity.upper()"/></td>
+                                <td class="k">Confidence</td><td><t t-out="o.confidence"/>%</td></tr>
+                            <tr><td class="k">Period</td><td><span t-field="o.period_start"/> to <span t-field="o.period_end"/></td>
+                                <td class="k">Events analysed</td><td t-out="o.event_count"/></tr>
+                            <tr><td class="k">Engine</td><td t-out="dict(o._fields['engine'].selection)[o.engine]"/>
+                                <td class="k">Review status</td><td t-out="dict(o._fields['state'].selection)[o.state]"/></tr>
+                        </table>
+                        <h4>1. Executive summary</h4>
+                        <p class="pre" t-out="o.executive_summary"/>
+                        <div class="box"><strong>Confirmed events</strong><p class="pre" t-out="o.confirmed_facts"/></div>
+                        <div class="box hypo"><strong>AI hypotheses (to be verified)</strong><p class="pre" t-out="o.hypotheses"/></div>
+                        <h4>2. Detected security activity</h4><p class="pre" t-out="o.detected_activity"/>
+                        <h4>3. Affected endpoints and servers</h4><p class="pre" t-out="o.affected_assets or 'None identified.'"/>
+                        <h4>4. Source and destination addresses</h4>
+                        <p>Source: <t t-out="o.source_ips or 'n/a'"/><br/>Destination: <t t-out="o.destination_ips or 'n/a'"/></p>
+                        <h4>5. Potential attack technique</h4><p class="pre" t-out="o.attack_technique or 'No technique identified.'"/>
+                        <h4>6. Severity and confidence</h4><p><t t-out="o.severity.title()"/> severity with <t t-out="o.confidence"/>% confidence.</p>
+                        <h4>7. Potential business impact</h4><p class="pre" t-out="o.business_impact"/>
+                        <t t-if="o.timeline_data">
+                            <h4>Attack timeline</h4>
+                            <table class="grid">
+                                <tr><th>Time (UTC)</th><th>Event</th><th>Basis</th></tr>
+                                <tr t-foreach="o.timeline_data" t-as="item">
+                                    <td style="white-space: nowrap;" t-out="item.get('time')"/>
+                                    <td t-out="item.get('event')"/>
+                                    <td t-out="'AI hypothesis' if item.get('kind') == 'hypothesis' else 'Confirmed'"/>
+                                </tr>
+                            </table>
+                        </t>
+                        <h4>8. Recommended investigation steps</h4><p class="pre" t-out="o.investigation_steps"/>
+                        <h4>9. Recommended remediation</h4><p class="pre" t-out="o.remediation"/>
+                        <h4>10. Supporting event references</h4><p t-out="o.event_references or 'n/a'"/>
+                        <p class="note">Generated by CyberGuard 360. AI output supports, and does not replace, analyst judgement.</p>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_analysis" model="ir.actions.report">
+        <field name="name">AI Analysis Report</field>
+        <field name="model">cg.ai.analysis</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">cyberguard_360.report_analysis_document</field>
+        <field name="report_file">cyberguard_360.report_analysis_document</field>
+        <field name="print_report_name">'%s - %s' % (object.reference, object.name)</field>
+        <field name="binding_model_id" ref="model_cg_ai_analysis"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- ============================================================ INCIDENT -->
+    <template id="report_incident_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page cgr">
+                        <t t-call="cyberguard_360.report_style"/>
+                        <div class="ref"><t t-out="o.reference"/> · Security incident report</div>
+                        <h2 t-out="o.name"/>
+                        <table class="kv">
+                            <tr><td class="k">Severity</td><td><span t-attf-class="sev sev-{{o.severity}}" t-out="o.severity.upper()"/></td>
+                                <td class="k">Category</td><td t-out="dict(o._fields['category'].selection)[o.category]"/></tr>
+                            <tr><td class="k">Stage</td><td t-out="dict(o._fields['stage'].selection)[o.stage]"/>
+                                <td class="k">Analyst</td><td t-out="o.analyst_id.name or 'Unassigned'"/></tr>
+                            <tr><td class="k">Detected</td><td><span t-field="o.detected_date"/></td>
+                                <td class="k">Contained</td><td><span t-field="o.contained_date"/></td></tr>
+                            <tr><td class="k">Response due</td><td><span t-field="o.sla_deadline"/></td>
+                                <td class="k">Closed</td><td><span t-field="o.closed_date"/></td></tr>
+                        </table>
+                        <h4>Description</h4><p class="pre" t-out="o.description or 'n/a'"/>
+                        <h4>Affected assets</h4>
+                        <p t-out="', '.join(o.asset_ids.mapped('name')) or 'None recorded.'"/>
+                        <t t-if="o.ai_summary">
+                            <div class="box hypo"><strong>AI summary</strong><p class="pre" t-out="o.ai_summary"/></div>
+                        </t>
+                        <h4>Timeline</h4>
+                        <table class="grid">
+                            <tr><th>Time (UTC)</th><th>Type</th><th>Event</th></tr>
+                            <t t-set="rows" t-value="sorted([(a.timestamp, 'Alert', a.name + ((' from ' + a.src_ip) if a.src_ip else '')) for a in o.alert_ids] + [(n.date, dict(n._fields['note_type'].selection)[n.note_type], (n.author_id.name or 'System') + ': ' + (n.content or '')) for n in o.note_ids], key=lambda r: r[0])"/>
+                            <tr t-foreach="rows" t-as="row">
+                                <td style="white-space: nowrap;" t-out="row[0]"/><td t-out="row[1]"/><td t-out="row[2]"/>
+                            </tr>
+                        </table>
+                        <t t-if="o.response_action_ids">
+                            <h4>Response actions</h4>
+                            <table class="grid">
+                                <tr><th>Action</th><th>Target</th><th>Status</th><th>Approved by</th></tr>
+                                <tr t-foreach="o.response_action_ids" t-as="act">
+                                    <td t-out="act.name"/><td t-out="act.target"/>
+                                    <td t-out="dict(act._fields['state'].selection)[act.state]"/><td t-out="act.approved_by.name or '-'"/>
+                                </tr>
+                            </table>
+                        </t>
+                        <h4>Root cause</h4><p class="pre" t-out="o.root_cause or 'Not yet determined.'"/>
+                        <h4>Resolution</h4><p class="pre" t-out="o.resolution or 'Incident is still open.'"/>
+                        <h4>Lessons learned</h4><p class="pre" t-out="o.lessons_learned or 'n/a'"/>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_incident" model="ir.actions.report">
+        <field name="name">Incident Report</field>
+        <field name="model">cg.incident</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">cyberguard_360.report_incident_document</field>
+        <field name="report_file">cyberguard_360.report_incident_document</field>
+        <field name="print_report_name">'%s - Incident report' % object.reference</field>
+        <field name="binding_model_id" ref="model_cg_incident"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- ============================================================ RISK REGISTER -->
+    <template id="report_risk_document">
+        <t t-call="web.html_container">
+            <t t-call="web.external_layout">
+                <div class="page cgr">
+                    <t t-call="cyberguard_360.report_style"/>
+                    <div class="ref">Organisational risk report</div>
+                    <h2>Cybersecurity risk assessment</h2>
+                    <p><t t-out="len(docs)"/> risk(s):
+                        <t t-foreach="['critical', 'high', 'medium', 'low']" t-as="lvl">
+                            <span t-attf-class="sev sev-{{lvl}}"><t t-out="len(docs.filtered(lambda r: r.level == lvl))"/> <t t-out="lvl"/></span>
+                        </t>
+                    </p>
+                    <table class="grid">
+                        <tr><th>Ref</th><th>Risk</th><th>L</th><th>I</th><th>Score</th><th>Level</th><th>Residual</th><th>Owner</th><th>Status</th></tr>
+                        <tr t-foreach="docs.sorted('score', reverse=True)" t-as="o">
+                            <td style="white-space: nowrap;" t-out="o.reference"/><td t-out="o.name"/>
+                            <td t-out="o.likelihood"/><td t-out="o.impact"/><td t-out="o.score"/>
+                            <td><span t-attf-class="sev sev-{{o.level}}" t-out="o.level"/></td>
+                            <td t-out="o.residual_score or '-'"/><td t-out="o.owner_id.name or '-'"/>
+                            <td t-out="dict(o._fields['state'].selection)[o.state]"/>
+                        </tr>
+                    </table>
+                    <t t-foreach="docs.sorted('score', reverse=True)" t-as="o">
+                        <h4><t t-out="o.reference"/> · <t t-out="o.name"/></h4>
+                        <table class="kv">
+                            <tr><td class="k">Threat</td><td t-out="o.threat or 'n/a'"/></tr>
+                            <tr><td class="k">Weakness</td><td t-out="o.weakness or 'n/a'"/></tr>
+                            <tr><td class="k">Assets</td><td t-out="', '.join(o.asset_ids.mapped('name')) or 'n/a'"/></tr>
+                            <tr><td class="k">Treatment</td><td><t t-out="dict(o._fields['treatment'].selection).get(o.treatment, 'n/a')"/>. <span class="pre" t-out="o.mitigation_plan or ''"/></td></tr>
+                            <tr><td class="k">Controls</td><td class="pre" t-out="o.controls or 'None recorded.'"/></tr>
+                        </table>
+                    </t>
+                </div>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_risk" model="ir.actions.report">
+        <field name="name">Risk Report</field>
+        <field name="model">cg.risk</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">cyberguard_360.report_risk_document</field>
+        <field name="report_file">cyberguard_360.report_risk_document</field>
+        <field name="print_report_name">'Cybersecurity risk report'</field>
+        <field name="binding_model_id" ref="model_cg_risk"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- ============================================================ VULNERABILITIES -->
+    <template id="report_vulnerability_document">
+        <t t-call="web.html_container">
+            <t t-call="web.external_layout">
+                <div class="page cgr">
+                    <t t-call="cyberguard_360.report_style"/>
+                    <div class="ref">Vulnerability summary</div>
+                    <h2>Vulnerability report</h2>
+                    <p><t t-out="len(docs)"/> vulnerabilit<t t-out="'y' if len(docs) == 1 else 'ies'"/>,
+                        <t t-out="len(docs.filtered(lambda v: v.state in ('open', 'in_progress')))"/> open,
+                        <t t-out="len(docs.filtered(lambda v: v.state == 'patched'))"/> patched.</p>
+                    <table class="grid">
+                        <tr><th>Priority</th><th>CVE</th><th>Title</th><th>CVSS</th><th>Assets</th><th>Fix</th><th>Due</th><th>Status</th></tr>
+                        <tr t-foreach="docs.sorted('priority_score', reverse=True)" t-as="o">
+                            <td t-out="(o.priority or '').upper()"/>
+                            <td style="white-space: nowrap;" t-out="o.cve_id or '-'"/><td t-out="o.name"/>
+                            <td><span t-attf-class="sev sev-{{o.severity}}" t-out="'%.1f' % o.cvss_score"/></td>
+                            <td t-out="', '.join(o.asset_ids.mapped('name')) or '-'"/>
+                            <td t-out="o.fixed_version or '-'"/><td><span t-field="o.due_date"/></td>
+                            <td t-out="dict(o._fields['state'].selection)[o.state]"/>
+                        </tr>
+                    </table>
+                </div>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_vulnerability" model="ir.actions.report">
+        <field name="name">Vulnerability Report</field>
+        <field name="model">cg.vulnerability</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">cyberguard_360.report_vulnerability_document</field>
+        <field name="report_file">cyberguard_360.report_vulnerability_document</field>
+        <field name="print_report_name">'Vulnerability report'</field>
+        <field name="binding_model_id" ref="model_cg_vulnerability"/>
+        <field name="binding_type">report</field>
+    </record>
+</odoo>

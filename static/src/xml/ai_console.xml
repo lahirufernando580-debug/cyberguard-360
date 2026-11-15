@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="cyberguard_360.RichText">
+        <t t-foreach="lines" t-as="line" t-key="line_index">
+            <p t-att-class="{ cg_li: line.bullet }"><t t-foreach="line.parts" t-as="part" t-key="part_index"><b t-if="part.bold" t-esc="part.text"/><t t-else="" t-esc="part.text"/></t></p>
+        </t>
+    </t>
+
+    <t t-name="cyberguard_360.AiConsole">
+        <div t-attf-class="cg_app {{ state.theme === 'light' ? 'cg_light' : '' }}">
+            <div class="cg_wrap">
+                <div class="cg_top">
+                    <div>
+                        <div class="cg_brand">CyberGuard 360</div>
+                        <div class="cg_title">AI Security Analyst</div>
+                        <div class="cg_sub">Understand security events without reading thousands of log lines.</div>
+                    </div>
+                    <div class="cg_actions">
+                        <button class="cg_btn" t-on-click="openSaved"><i class="fa fa-archive"/> Saved analyses</button>
+                        <button class="cg_btn cg_icon" t-on-click="toggleTheme" title="Switch between dark and light" aria-label="Switch theme">
+                            <i t-attf-class="fa {{ state.theme === 'dark' ? 'fa-sun-o' : 'fa-moon-o' }}"/>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="cg_console">
+                    <div>
+                        <!-- Request -->
+                        <div class="cg_box">
+                            <div class="cg_box_head">
+                                <span class="cg_label">New analysis</span>
+                                <span class="cg_ai_tag">AI</span>
+                            </div>
+                            <div class="cg_chips">
+                                <t t-foreach="modes" t-as="mode" t-key="mode.key">
+                                    <button t-attf-class="cg_chipbtn {{ state.mode === mode.key ? 'cg_active' : '' }}" t-on-click="() => this.state.mode = mode.key" t-esc="mode.label"/>
+                                </t>
+                            </div>
+                            <div class="cg_row_sub" style="margin-top: 10px;" t-esc="modeHint"/>
+                            <div class="cg_form_row">
+                                <label class="cg_field">
+                                    <span class="cg_label">Time window</span>
+                                    <select t-model="state.hours">
+                                        <t t-foreach="windows" t-as="win" t-key="win.value">
+                                            <option t-att-value="win.value" t-esc="win.label"/>
+                                        </t>
+                                    </select>
+                                </label>
+                                <label class="cg_field">
+                                    <span class="cg_label">Minimum severity</span>
+                                    <select t-model="state.severity">
+                                        <option value="">Any severity</option>
+                                        <option value="medium">Medium and above</option>
+                                        <option value="high">High and above</option>
+                                        <option value="critical">Critical only</option>
+                                    </select>
+                                </label>
+                                <label class="cg_field">
+                                    <span class="cg_label">Endpoint</span>
+                                    <select t-model="state.assetId">
+                                        <option value="">All endpoints</option>
+                                        <t t-foreach="state.assets" t-as="asset" t-key="asset.id">
+                                            <option t-att-value="asset.id" t-esc="asset.name"/>
+                                        </t>
+                                    </select>
+                                </label>
+                                <button class="cg_btn cg_primary" t-on-click="run" t-att-disabled="state.running">
+                                    <i t-attf-class="fa {{ state.running ? 'fa-circle-o-notch fa-spin' : 'fa-play' }}"/>
+                                    <t t-esc="state.running ? 'Analysing' : 'Run analysis'"/>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Empty state -->
+                        <div t-if="!state.report" class="cg_box cg_report">
+                            <div class="cg_empty" style="padding: 44px 0;">
+                                Choose what to analyse and run it. The result is saved automatically.<br/>
+                                Only structured event fields are shared with the AI: never credentials or database access.
+                            </div>
+                        </div>
+
+                        <!-- Report -->
+                        <div t-else="" class="cg_box cg_report">
+                            <t t-set="r" t-value="state.report"/>
+                            <div class="cg_report_head">
+                                <div style="flex: 1; min-width: 220px;">
+                                    <div class="cg_label"><t t-esc="r.reference"/> · <t t-esc="r.type"/> · <t t-esc="r.engine"/></div>
+                                    <h3 style="font-size: 16px; margin-top: 4px;" t-esc="r.name"/>
+                                </div>
+                                <div t-attf-class="cg_t_{{ r.severity }}"><div class="cg_label">Severity</div><span class="cg_pill" style="margin-top: 6px;" t-esc="r.severity"/></div>
+                                <div t-attf-class="cg_conf cg_t_{{ confidenceTone }}">
+                                    <div class="cg_label">Confidence <t t-esc="r.confidence"/>%</div>
+                                    <div class="cg_bar"><span t-attf-style="width: {{ r.confidence }}%"/></div>
+                                </div>
+                                <div><div class="cg_label">Events</div><div style="font-size: 18px; font-weight: 600;" t-esc="r.event_count"/></div>
+                                <div class="cg_actions">
+                                    <button class="cg_btn" t-on-click="openReport"><i class="fa fa-external-link"/> Open</button>
+                                    <button class="cg_btn" t-on-click="printReport"><i class="fa fa-print"/> PDF</button>
+                                </div>
+                            </div>
+                            <div t-if="r.engine_note" class="cg_row_sub cg_t_high" style="margin-bottom: 10px; white-space: normal;"><span class="cg_tone" t-esc="r.engine_note"/></div>
+
+                            <p class="cg_lead" t-esc="r.executive_summary"/>
+
+                            <div class="cg_two">
+                                <div class="cg_evi cg_t_ok">
+                                    <h4><i class="fa fa-check-circle"/> Confirmed events</h4>
+                                    <small>Directly supported by the logs.</small>
+                                    <ul class="cg_ul"><t t-foreach="r.confirmed_facts" t-as="item" t-key="item_index"><li t-esc="item"/></t></ul>
+                                    <div t-if="!r.confirmed_facts.length" class="cg_row_sub">Nothing confirmed.</div>
+                                </div>
+                                <div class="cg_evi cg_t_ai">
+                                    <h4><i class="fa fa-lightbulb-o"/> AI hypotheses</h4>
+                                    <small>Interpretation. Verify before acting.</small>
+                                    <ul class="cg_ul"><t t-foreach="r.hypotheses" t-as="item" t-key="item_index"><li t-esc="item"/></t></ul>
+                                    <div t-if="!r.hypotheses.length" class="cg_row_sub">No hypotheses.</div>
+                                </div>
+                            </div>
+
+                            <div class="cg_sec"><span class="cg_sec_n">02</span><div><h4>Detected security activity</h4>
+                                <ul class="cg_ul"><t t-foreach="r.detected_activity" t-as="item" t-key="item_index"><li t-esc="item"/></t></ul></div></div>
+                            <div class="cg_sec"><span class="cg_sec_n">03</span><div><h4>Affected endpoints and servers</h4>
+                                <ul class="cg_ul"><t t-foreach="r.affected_assets" t-as="item" t-key="item_index"><li t-esc="item"/></t></ul>
+                                <div t-if="!r.affected_assets.length" class="cg_row_sub">None identified.</div></div></div>
+                            <div class="cg_sec"><span class="cg_sec_n">04</span><div><h4>Source and destination addresses</h4>
+                                <div class="cg_row_sub" style="white-space: normal;">Source <span class="cg_mono" style="color: var(--cg-text);" t-esc="r.source_ips or 'n/a'"/></div>
+                                <div class="cg_row_sub" style="white-space: normal;">Destination <span class="cg_mono" style="color: var(--cg-text);" t-esc="r.destination_ips or 'n/a'"/></div></div></div>
+                            <div class="cg_sec"><span class="cg_sec_n">05</span><div><h4>Potential attack technique</h4>
+                                <ul class="cg_ul"><t t-foreach="r.attack_technique" t-as="item" t-key="item_index"><li t-esc="item"/></t></ul>
+                                <div t-if="!r.attack_technique.length" class="cg_row_sub">No ATT&amp;CK technique supported by the evidence.</div></div></div>
+                            <div class="cg_sec"><span class="cg_sec_n">06</span><div><h4>Potential business impact</h4><div t-esc="r.business_impact"/></div></div>
+                            <div t-if="r.timeline.length" class="cg_sec"><span class="cg_sec_n">07</span><div><h4>Attack timeline</h4>
+                                <div class="cg_tl">
+                                    <t t-foreach="r.timeline" t-as="item" t-key="item_index">
+                                        <div t-attf-class="cg_tl_i {{ item.kind === 'hypothesis' ? 'cg_hyp' : '' }}">
+                                            <time t-esc="formatTime(item.time, 'dd LLL, HH:mm:ss')"/>
+                                            <t t-esc="item.event"/>
+                                        </div>
+                                    </t>
+                                </div></div></div>
+                            <div class="cg_sec"><span class="cg_sec_n">08</span><div><h4>Recommended investigation steps</h4>
+                                <ul class="cg_ul"><t t-foreach="r.investigation_steps" t-as="item" t-key="item_index"><li t-esc="item"/></t></ul></div></div>
+                            <div class="cg_sec"><span class="cg_sec_n">09</span><div><h4>Recommended remediation</h4>
+                                <ul class="cg_ul"><t t-foreach="r.remediation" t-as="item" t-key="item_index"><li t-esc="item"/></t></ul></div></div>
+                            <div class="cg_sec"><span class="cg_sec_n">10</span><div><h4>Supporting event references</h4>
+                                <div class="cg_mono cg_row_sub" style="white-space: normal;" t-esc="r.event_references or 'n/a'"/></div></div>
+                        </div>
+                    </div>
+
+                    <!-- Chat -->
+                    <div class="cg_box cg_chat">
+                        <div class="cg_chat_head">
+                            <span class="cg_label">Ask the analyst</span>
+                            <span class="cg_ai_tag">AI CHAT</span>
+                        </div>
+                        <div class="cg_chat_body" t-ref="chatBody">
+                            <t t-foreach="state.messages" t-as="message" t-key="message_index">
+                                <div t-attf-class="cg_msg {{ message.role === 'user' ? 'cg_user' : 'cg_bot' }}">
+                                    <t t-call="cyberguard_360.RichText"><t t-set="lines" t-value="message.lines"/></t>
+                                    <div t-if="message.engine" class="cg_msg_meta" t-esc="message.engine"/>
+                                </div>
+                            </t>
+                            <div t-if="state.thinking" class="cg_typing">ANALYSING...</div>
+                        </div>
+                        <div class="cg_suggest" t-if="state.messages.length &lt; 3">
+                            <t t-foreach="suggestions" t-as="suggestion" t-key="suggestion">
+                                <button class="cg_chipbtn" t-on-click="() => this.ask(suggestion)" t-esc="suggestion"/>
+                            </t>
+                        </div>
+                        <div class="cg_chat_in">
+                            <input type="text" t-model="state.question" t-on-keydown="onKeydown" placeholder="Ask about alerts, incidents, risks..." aria-label="Question for the AI analyst"/>
+                            <button class="cg_btn cg_ai" t-on-click="() => this.ask()" t-att-disabled="state.thinking"><i class="fa fa-paper-plane"/></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

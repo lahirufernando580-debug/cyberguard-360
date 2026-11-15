@@ -1,0 +1,43 @@
+{
+    'name': "CyberGuard 360",
+    'summary': "AI-powered cybersecurity risk management with Wazuh SOC integration",
+    'description': "Security operations and risk management for businesses without a dedicated "
+                   "security team: IT assets, Wazuh alerts, an AI log analyst, vulnerability and risk "
+                   "registers, incident response, threat intelligence and automated notifications.",
+    'version': '19.0.1.0.0',
+    'category': 'Cybersecurity',
+    'author': "CyberGuard 360 Team",
+    'license': 'LGPL-3',
+    'depends': ['base', 'mail', 'web'],
+    'application': True,
+    'installable': True,
+    'data': [
+        'security/security.xml',
+        'security/ir.model.access.csv',
+        'data/sequences.xml',
+        'data/mitre_data.xml',
+        'data/base_data.xml',
+        'data/cron.xml',
+        'report/reports.xml',
+        'views/asset_views.xml',
+        'views/soc_views.xml',
+        'views/ai_views.xml',
+        'views/vulnerability_views.xml',
+        'views/risk_views.xml',
+        'views/incident_views.xml',
+        'views/threat_views.xml',
+        'views/automation_views.xml',
+        'views/admin_views.xml',
+        'views/menus.xml',
+        'data/demo_loader.xml',
+    ],
+    'assets': {
+        'web.assets_backend': [
+            'cyberguard_360/static/src/scss/cyberguard.scss',
+            'cyberguard_360/static/src/scss/glass.scss',
+            'cyberguard_360/static/src/scss/glass_global.scss',
+            'cyberguard_360/static/src/js/*.js',
+            'cyberguard_360/static/src/xml/*.xml',
+        ],
+    },
+}

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="cyberguard_360.RiskMatrix">
+        <div t-attf-class="cg_app {{ state.theme === 'light' ? 'cg_light' : '' }}">
+            <div class="cg_wrap">
+                <div class="cg_top">
+                    <div>
+                        <div class="cg_brand">CyberGuard 360</div>
+                        <div class="cg_title">Risk Matrix</div>
+                        <div class="cg_sub">Likelihood x business impact for every open risk. Switch to residual to see the effect of controls.</div>
+                    </div>
+                    <div class="cg_actions">
+                        <div class="cg_toggle" role="group" aria-label="Risk view">
+                            <button t-att-class="{ cg_active: state.view === 'inherent' }" t-on-click="() => this.setView('inherent')">Inherent</button>
+                            <button t-att-class="{ cg_active: state.view === 'residual' }" t-on-click="() => this.setView('residual')">Residual</button>
+                        </div>
+                        <button class="cg_btn" t-on-click="openRegister"><i class="fa fa-list"/> Risk register</button>
+                        <button class="cg_btn cg_icon" t-on-click="toggleTheme" title="Switch between dark and light" aria-label="Switch theme">
+                            <i t-attf-class="fa {{ state.theme === 'dark' ? 'fa-sun-o' : 'fa-moon-o' }}"/>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="cg_matrix_page">
+                    <div class="cg_box">
+                        <div class="cg_box_head">
+                            <span class="cg_label"><t t-esc="state.view"/> risk · <t t-esc="state.risks.length"/> open</span>
+                            <div class="cg_legend">
+                                <t t-foreach="totals" t-as="total" t-key="total.key">
+                                    <span t-attf-class="cg_t_{{ total.tone }}"><i/><t t-esc="total.count"/> <t t-esc="total.key"/></span>
+                                </t>
+                            </div>
+                        </div>
+                        <div class="cg_matrix cg_matrix_big">
+                            <div class="cg_matrix_y">Business impact 1 to 5</div>
+                            <t t-foreach="rows" t-as="row" t-key="row_index">
+                                <t t-foreach="row" t-as="cell" t-key="cell.likelihood">
+                                    <button t-attf-class="cg_cell cg_t_{{ cell.tone }} {{ cell.risks.length ? 'cg_has' : '' }} {{ isSelected(cell) ? 'cg_sel' : '' }}"
+                                            t-att-title="'Likelihood ' + cell.likelihood + ', impact ' + cell.impact"
+                                            t-on-click="() => this.select(cell)">
+                                        <span class="cg_cell_score" t-esc="cell.score"/>
+                                        <t t-foreach="cell.risks" t-as="risk" t-key="risk.id">
+                                            <span class="cg_riskchip" t-att-title="risk.name" t-esc="risk.reference"/>
+                                        </t>
+                                    </button>
+                                </t>
+                            </t>
+                            <div class="cg_matrix_x">Likelihood 1 to 5</div>
+                        </div>
+                    </div>
+
+                    <div class="cg_box">
+                        <div class="cg_box_head">
+                            <span class="cg_label">
+                                <t t-if="state.selected">Likelihood <t t-esc="state.selected.likelihood"/> · impact <t t-esc="state.selected.impact"/></t>
+                                <t t-else="">All open risks</t>
+                            </span>
+                            <button t-if="state.selected" class="cg_link" t-on-click="() => this.state.selected = null">Clear</button>
+                        </div>
+                        <div class="cg_rows">
+                            <t t-foreach="listed" t-as="risk" t-key="risk.id">
+                                <button t-attf-class="cg_row cg_row_alert cg_t_{{ risk.tone }}" t-on-click="() => this.openRisk(risk)">
+                                    <span class="cg_sevdot"/>
+                                    <div style="min-width: 0;">
+                                        <div class="cg_row_main" t-att-title="risk.name" t-esc="risk.name"/>
+                                        <div class="cg_row_sub"><span class="cg_mono" t-esc="risk.reference"/> · <t t-esc="risk.owner_id ? risk.owner_id[1] : 'No owner'"/></div>
+                                    </div>
+                                    <span class="cg_pill" t-esc="risk.shownScore"/>
+                                </button>
+                            </t>
+                            <div t-if="!listed.length" class="cg_empty">No risks in this cell.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

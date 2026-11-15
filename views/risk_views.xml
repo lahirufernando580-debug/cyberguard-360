@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="cg_risk_view_search" model="ir.ui.view">
+        <field name="name">cg.risk.search</field>
+        <field name="model">cg.risk</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name" string="Risk" filter_domain="['|', '|', ('name', 'ilike', self), ('reference', 'ilike', self), ('threat', 'ilike', self)]"/>
+                <field name="owner_id"/>
+                <field name="asset_ids"/>
+                <filter name="open" string="Open" domain="[('state', '!=', 'closed')]"/>
+                <filter name="mine" string="My Risks" domain="[('owner_id', '=', uid)]"/>
+                <filter name="unowned" string="No Owner" domain="[('owner_id', '=', False)]"/>
+                <separator/>
+                <filter name="critical" string="Critical" domain="[('level', '=', 'critical')]"/>
+                <filter name="high" string="High" domain="[('level', '=', 'high')]"/>
+                <filter name="medium" string="Medium" domain="[('level', '=', 'medium')]"/>
+                <filter name="low" string="Low" domain="[('level', '=', 'low')]"/>
+                <separator/>
+                <filter name="treating" string="In Treatment" domain="[('state', '=', 'treating')]"/>
+                <filter name="closed" string="Closed" domain="[('state', '=', 'closed')]"/>
+                <group>
+                    <filter name="group_level" string="Risk Level" context="{'group_by': 'level'}"/>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                    <filter name="group_category" string="Category" context="{'group_by': 'category'}"/>
+                    <filter name="group_owner" string="Owner" context="{'group_by': 'owner_id'}"/>
+                    <filter name="group_treatment" string="Treatment" context="{'group_by': 'treatment'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="cg_risk_view_list" model="ir.ui.view">
+        <field name="name">cg.risk.list</field>
+        <field name="model">cg.risk</field>
+        <field name="arch" type="xml">
+            <list decoration-muted="state == 'closed'" class="cg_glass_view">
+                <field name="reference" class="cg_mono"/>
+                <field name="name"/>
+                <field name="category" optional="show"/>
+                <field name="likelihood" optional="show"/>
+                <field name="impact" optional="show"/>
+                <field name="score"/>
+                <field name="level" widget="badge" decoration-danger="level == 'critical'" decoration-warning="level == 'high'" decoration-info="level == 'medium'" decoration-success="level == 'low'"/>
+                <field name="residual_score" string="Residual"/>
+                <field name="residual_level" widget="badge" string="Residual Level" decoration-danger="residual_level == 'critical'" decoration-warning="residual_level == 'high'" decoration-info="residual_level == 'medium'" decoration-success="residual_level == 'low'" optional="show"/>
+                <field name="treatment" optional="show"/>
+                <field name="owner_id" widget="many2one_avatar_user"/>
+                <field name="due_date" optional="show"/>
+                <field name="state" widget="badge" decoration-info="state in ('identified', 'assessed')" decoration-warning="state == 'treating'" decoration-success="state in ('monitoring', 'closed')"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="cg_risk_view_kanban" model="ir.ui.view">
+        <field name="name">cg.risk.kanban</field>
+        <field name="model">cg.risk</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="cg_kanban cg_glass_view">
+                <field name="level"/>
+                <field name="residual_score"/>
+                <templates>
+                    <t t-name="card">
+                        <div t-attf-class="cg_card cg_edge_{{record.level.raw_value}}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="cg_mono cg_card_sub"><field name="reference"/></span>
+                                <span t-attf-class="cg_score_pill cg_bg_{{record.level.raw_value}}"><field name="score"/></span>
+                            </div>
+                            <field name="name" class="cg_card_title"/>
+                            <div class="cg_card_sub">
+                                Likelihood <field name="likelihood"/> · Impact <field name="impact"/>
+                            </div>
+                            <div class="cg_card_meta" t-if="record.residual_score.raw_value">
+                                <span class="cg_chip">Residual <field name="residual_score"/></span>
+                                <span class="cg_chip cg_chip_ok">-<field name="risk_reduction"/>%</span>
+                            </div>
+                            <footer class="cg_card_foot">
+                                <field name="category"/>
+                                <field name="owner_id" widget="many2one_avatar_user" class="ms-auto"/>
+                            </footer>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="cg_risk_view_form" model="ir.ui.view">
+        <field name="name">cg.risk.form</field>
+        <field name="model">cg.risk</field>
+        <field name="arch" type="xml">
+            <form class="cg_glass_view">
+                <header>
+                    <button name="action_ai_analysis" type="object" string="AI Risk Analysis" class="btn-primary" icon="fa-magic" invisible="state == 'closed'"/>
+                    <button name="action_assess" type="object" string="Mark Assessed" invisible="state != 'identified'"/>
+                    <button name="action_treat" type="object" string="Start Treatment" invisible="state != 'assessed'"/>
+                    <button name="action_calculate_residual" type="object" string="Calculate Residual Risk" invisible="state == 'closed'"/>
+                    <button name="action_reassess" type="object" string="Reassess" invisible="state not in ('treating', 'monitoring')"/>
+                    <button name="action_monitor" type="object" string="Move to Monitoring" invisible="state != 'treating'"/>
+                    <button name="action_close" type="object" string="Close Risk" invisible="state in ('closed', 'identified')" groups="cyberguard_360.group_cg_manager"/>
+                    <button name="action_reopen" type="object" string="Reopen" invisible="state != 'closed'"/>
+                    <button name="action_print" type="object" string="Print" icon="fa-print"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <span class="cg_ref"><field name="reference"/></span>
+                        <h1><field name="name" placeholder="e.g. Compromise of the public web server"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="category"/>
+                            <field name="owner_id" widget="many2one_avatar_user"/>
+                        </group>
+                        <group>
+                            <field name="next_review_date"/>
+                            <field name="last_review_date"/>
+                        </group>
+                    </group>
+
+                    <div class="cg_split">
+                        <div class="cg_panel">
+                            <h3>Inherent risk</h3>
+                            <p class="cg_hint">Before any controls. Score = likelihood x impact.</p>
+                            <group>
+                                <field name="likelihood"/>
+                                <field name="impact"/>
+                                <field name="score"/>
+                                <field name="level" widget="badge" decoration-danger="level == 'critical'" decoration-warning="level == 'high'" decoration-info="level == 'medium'" decoration-success="level == 'low'"/>
+                            </group>
+                        </div>
+                        <div class="cg_panel">
+                            <h3>Residual risk</h3>
+                            <p class="cg_hint">What remains once the controls below are in place.</p>
+                            <group>
+                                <field name="residual_likelihood"/>
+                                <field name="residual_impact"/>
+                                <field name="residual_score"/>
+                                <field name="residual_level" widget="badge" decoration-danger="residual_level == 'critical'" decoration-warning="residual_level == 'high'" decoration-info="residual_level == 'medium'" decoration-success="residual_level == 'low'"/>
+                                <field name="risk_reduction" widget="progressbar"/>
+                            </group>
+                        </div>
+                    </div>
+
+                    <div class="cg_panel cg_panel_hypo" invisible="not ai_rationale">
+                        <h3><i class="fa fa-magic me-2"/>AI assessment</h3>
+                        <field name="ai_rationale"/>
+                    </div>
+
+                    <notebook>
+                        <page string="Threat and Weakness" name="threat">
+                            <group>
+                                <field name="threat" placeholder="What could happen, and who or what would cause it?"/>
+                                <field name="weakness" placeholder="Which gap makes it possible?"/>
+                                <field name="description"/>
+                            </group>
+                        </page>
+                        <page string="Treatment" name="treatment">
+                            <group>
+                                <group>
+                                    <field name="treatment" widget="radio" options="{'horizontal': true}"/>
+                                    <field name="control_effectiveness"/>
+                                </group>
+                                <group>
+                                    <field name="due_date"/>
+                                </group>
+                            </group>
+                            <group>
+                                <field name="mitigation_plan" placeholder="What will be done, by whom, by when?"/>
+                                <field name="controls" placeholder="One security control per line"/>
+                            </group>
+                        </page>
+                        <page string="Linked Evidence" name="links">
+                            <group string="Assets">
+                                <field name="asset_ids" nolabel="1" colspan="2">
+                                    <list>
+                                        <field name="name"/>
+                                        <field name="asset_type"/>
+                                        <field name="criticality" widget="badge" decoration-danger="criticality == 'critical'" decoration-warning="criticality == 'high'" decoration-info="criticality == 'medium'" decoration-muted="criticality == 'low'"/>
+                                        <field name="internet_facing"/>
+                                    </list>
+                                </field>
+                            </group>
+                            <group string="Vulnerabilities">
+                                <field name="vulnerability_ids" nolabel="1" colspan="2">
+                                    <list>
+                                        <field name="cve_id" class="cg_mono"/>
+                                        <field name="name"/>
+                                        <field name="cvss_score"/>
+                                        <field name="state" widget="badge"/>
+                                    </list>
+                                </field>
+                            </group>
+                            <group string="Alerts">
+                                <field name="alert_ids" nolabel="1" colspan="2" readonly="1">
+                                    <list limit="10">
+                                        <field name="timestamp"/>
+                                        <field name="name"/>
+                                        <field name="severity" widget="badge" decoration-danger="severity == 'critical'" decoration-warning="severity == 'high'" decoration-info="severity == 'medium'" decoration-muted="severity == 'low'"/>
+                                    </list>
+                                </field>
+                            </group>
+                        </page>
+                        <page string="AI Analyses" name="analyses" invisible="not analysis_ids">
+                            <field name="analysis_ids" readonly="1">
+                                <list>
+                                    <field name="reference" class="cg_mono"/>
+                                    <field name="name"/>
+                                    <field name="severity" widget="badge"/>
+                                    <field name="confidence" widget="progressbar"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="cg_risk_view_pivot" model="ir.ui.view">
+        <field name="name">cg.risk.pivot</field>
+        <field name="model">cg.risk</field>
+        <field name="arch" type="xml">
+            <pivot class="cg_glass_view">
+                <field name="impact" type="row"/>
+                <field name="likelihood" type="col"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="cg_risk_view_graph" model="ir.ui.view">
+        <field name="name">cg.risk.graph</field>
+        <field name="model">cg.risk</field>
+        <field name="arch" type="xml">
+            <graph type="pie" class="cg_glass_view">
+                <field name="level"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="cg_risk_action" model="ir.actions.act_window">
+        <field name="name">Risk Register</field>
+        <field name="res_model">cg.risk</field>
+        <field name="view_mode">list,kanban,form,pivot,graph</field>
+        <field name="context">{'search_default_open': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Create your first risk assessment</p>
+            <p>Describe the threat and the weakness, rate likelihood and impact from 1 to 5, and CyberGuard calculates the score.</p>
+        </field>
+    </record>
+</odoo>

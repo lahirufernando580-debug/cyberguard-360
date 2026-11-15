@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="seq_cg_incident" model="ir.sequence">
+        <field name="name">CyberGuard Incident</field>
+        <field name="code">cg.incident</field>
+        <field name="prefix">INC-</field>
+        <field name="padding">4</field>
+    </record>
+    <record id="seq_cg_risk" model="ir.sequence">
+        <field name="name">CyberGuard Risk</field>
+        <field name="code">cg.risk</field>
+        <field name="prefix">RSK-</field>
+        <field name="padding">4</field>
+    </record>
+    <record id="seq_cg_analysis" model="ir.sequence">
+        <field name="name">CyberGuard AI Analysis</field>
+        <field name="code">cg.ai.analysis</field>
+        <field name="prefix">AIA-</field>
+        <field name="padding">4</field>
+    </record>
+</odoo>

@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="cg_ai_analysis_view_search" model="ir.ui.view">
+        <field name="name">cg.ai.analysis.search</field>
+        <field name="model">cg.ai.analysis</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name" filter_domain="['|', ('name', 'ilike', self), ('executive_summary', 'ilike', self)]"/>
+                <field name="reference"/>
+                <field name="asset_ids"/>
+                <field name="technique_ids"/>
+                <filter name="draft" string="Awaiting Review" domain="[('state', '=', 'draft')]"/>
+                <filter name="approved" string="Approved" domain="[('state', '=', 'approved')]"/>
+                <separator/>
+                <filter name="type_daily" string="Daily Summaries" domain="[('analysis_type', '=', 'daily_summary')]"/>
+                <filter name="type_exec" string="Executive Summaries" domain="[('analysis_type', '=', 'executive')]"/>
+                <filter name="type_threat" string="Threat Investigations" domain="[('analysis_type', '=', 'threat')]"/>
+                <filter name="type_incident" string="Incident Analyses" domain="[('analysis_type', '=', 'incident')]"/>
+                <separator/>
+                <filter name="severe" string="High or Critical" domain="[('severity', 'in', ('high', 'critical'))]"/>
+                <group>
+                    <filter name="group_type" string="Type" context="{'group_by': 'analysis_type'}"/>
+                    <filter name="group_severity" string="Severity" context="{'group_by': 'severity'}"/>
+                    <filter name="group_engine" string="Engine" context="{'group_by': 'engine'}"/>
+                    <filter name="group_date" string="Date" context="{'group_by': 'create_date:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="cg_ai_analysis_view_list" model="ir.ui.view">
+        <field name="name">cg.ai.analysis.list</field>
+        <field name="model">cg.ai.analysis</field>
+        <field name="arch" type="xml">
+            <list create="0" delete="0" class="cg_glass_view">
+                <field name="reference" class="cg_mono"/>
+                <field name="create_date" string="Generated"/>
+                <field name="name"/>
+                <field name="analysis_type" widget="badge"/>
+                <field name="event_count"/>
+                <field name="severity" widget="badge" decoration-danger="severity == 'critical'" decoration-warning="severity == 'high'" decoration-info="severity == 'medium'" decoration-muted="severity == 'low'"/>
+                <field name="confidence" widget="progressbar"/>
+                <field name="engine" optional="show"/>
+                <field name="user_id" widget="many2one_avatar_user" optional="show"/>
+                <field name="state" widget="badge" decoration-warning="state == 'draft'" decoration-info="state == 'reviewed'" decoration-success="state == 'approved'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="cg_ai_analysis_view_form" model="ir.ui.view">
+        <field name="name">cg.ai.analysis.form</field>
+        <field name="model">cg.ai.analysis</field>
+        <field name="arch" type="xml">
+            <form create="0" delete="0" class="cg_report_form cg_glass_view">
+                <header>
+                    <button name="action_mark_reviewed" type="object" string="Mark Reviewed" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_approve" type="object" string="Approve" class="btn-primary" invisible="state != 'reviewed'" groups="cyberguard_360.group_cg_manager"/>
+                    <button name="action_create_incident" type="object" string="Create Incident" invisible="incident_id or not alert_ids"/>
+                    <button name="action_print" type="object" string="Print Report" icon="fa-print"/>
+                    <button name="action_reset" type="object" string="Back to Draft" invisible="state == 'draft'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" type="object" name="action_view_events" icon="fa-list-ul">
+                            <field name="event_count" widget="statinfo" string="Events"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <span class="cg_ref"><field name="reference"/> · <field name="analysis_type" readonly="1"/></span>
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <div class="alert alert-warning" role="alert" invisible="not engine_note">
+                        <field name="engine_note"/>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="severity" widget="badge" decoration-danger="severity == 'critical'" decoration-warning="severity == 'high'" decoration-info="severity == 'medium'" decoration-muted="severity == 'low'"/>
+                            <field name="confidence" widget="progressbar"/>
+                            <field name="engine"/>
+                        </group>
+                        <group>
+                            <field name="period_start"/>
+                            <field name="period_end"/>
+                            <field name="user_id" widget="many2one_avatar_user"/>
+                            <field name="incident_id" invisible="not incident_id"/>
+                            <field name="risk_id" invisible="not risk_id"/>
+                        </group>
+                    </group>
+
+                    <div class="cg_section">
+                        <div class="cg_section_num">01</div>
+                        <div class="cg_section_body">
+                            <h3>Executive summary</h3>
+                            <field name="executive_summary" class="cg_lead"/>
+                        </div>
+                    </div>
+
+                    <div class="cg_split">
+                        <div class="cg_panel cg_panel_fact">
+                            <h3><i class="fa fa-check-circle me-2"/>Confirmed events</h3>
+                            <p class="cg_hint">Directly supported by the logs analysed.</p>
+                            <field name="confirmed_facts"/>
+                        </div>
+                        <div class="cg_panel cg_panel_hypo">
+                            <h3><i class="fa fa-lightbulb-o me-2"/>AI hypotheses</h3>
+                            <p class="cg_hint">Interpretation. Verify before acting on it.</p>
+                            <field name="hypotheses"/>
+                        </div>
+                    </div>
+
+                    <div class="cg_section">
+                        <div class="cg_section_num">02</div>
+                        <div class="cg_section_body"><h3>Detected security activity</h3><field name="detected_activity"/></div>
+                    </div>
+                    <div class="cg_section">
+                        <div class="cg_section_num">03</div>
+                        <div class="cg_section_body">
+                            <h3>Affected endpoints and servers</h3>
+                            <field name="affected_assets"/>
+                            <field name="asset_ids" widget="many2many_tags"/>
+                        </div>
+                    </div>
+                    <div class="cg_section">
+                        <div class="cg_section_num">04</div>
+                        <div class="cg_section_body">
+                            <h3>Source and destination addresses</h3>
+                            <group>
+                                <field name="source_ips" class="cg_mono"/>
+                                <field name="destination_ips" class="cg_mono"/>
+                            </group>
+                        </div>
+                    </div>
+                    <div class="cg_section">
+                        <div class="cg_section_num">05</div>
+                        <div class="cg_section_body">
+                            <h3>Potential attack technique (MITRE ATT&amp;CK)</h3>
+                            <field name="technique_ids" widget="many2many_tags"/>
+                            <field name="attack_technique"/>
+                        </div>
+                    </div>
+                    <div class="cg_section">
+                        <div class="cg_section_num">06</div>
+                        <div class="cg_section_body"><h3>Potential business impact</h3><field name="business_impact"/></div>
+                    </div>
+                    <div class="cg_section">
+                        <div class="cg_section_num">07</div>
+                        <div class="cg_section_body"><h3>Attack timeline</h3><field name="timeline_html" readonly="1"/></div>
+                    </div>
+                    <div class="cg_section">
+                        <div class="cg_section_num">08</div>
+                        <div class="cg_section_body"><h3>Recommended investigation steps</h3><field name="investigation_steps"/></div>
+                    </div>
+                    <div class="cg_section">
+                        <div class="cg_section_num">09</div>
+                        <div class="cg_section_body"><h3>Recommended remediation</h3><field name="remediation"/></div>
+                    </div>
+                    <div class="cg_section">
+                        <div class="cg_section_num">10</div>
+                        <div class="cg_section_body">
+                            <h3>Supporting event references</h3>
+                            <field name="event_references" class="cg_mono"/>
+                            <field name="alert_ids" readonly="1">
+                                <list limit="10">
+                                    <field name="timestamp"/>
+                                    <field name="name"/>
+                                    <field name="asset_id"/>
+                                    <field name="src_ip" class="cg_mono"/>
+                                    <field name="severity" widget="badge" decoration-danger="severity == 'critical'" decoration-warning="severity == 'high'" decoration-info="severity == 'medium'" decoration-muted="severity == 'low'"/>
+                                </list>
+                            </field>
+                        </div>
+                    </div>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="cg_ai_analysis_action" model="ir.actions.act_window">
+        <field name="name">Saved Analyses</field>
+        <field name="res_model">cg.ai.analysis</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No analyses yet</p>
+            <p>Open the AI Analyst console or select alerts and choose "Analyse with AI".</p>
+        </field>
+    </record>
+
+    <record id="cg_ai_daily_action" model="ir.actions.act_window">
+        <field name="name">Daily Summaries</field>
+        <field name="res_model">cg.ai.analysis</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('analysis_type', 'in', ('daily_summary', 'executive', 'comparison'))]</field>
+    </record>
+
+    <record id="cg_threat_report_action" model="ir.actions.act_window">
+        <field name="name">Threat Reports</field>
+        <field name="res_model">cg.ai.analysis</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('analysis_type', '=', 'threat')]</field>
+    </record>
+
+    <!-- Client actions -->
+    <record id="cg_dashboard_action" model="ir.actions.client">
+        <field name="name">Command Center</field>
+        <field name="tag">cyberguard_360.dashboard</field>
+    </record>
+    <record id="cg_ai_console_action" model="ir.actions.client">
+        <field name="name">AI Analyst</field>
+        <field name="tag">cyberguard_360.ai_console</field>
+    </record>
+    <record id="cg_risk_matrix_action" model="ir.actions.client">
+        <field name="name">Risk Matrix</field>
+        <field name="tag">cyberguard_360.risk_matrix</field>
+    </record>
+</odoo>

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="cg_menu_root" name="CyberGuard 360" sequence="1"
+              web_icon="cyberguard_360,static/description/icon.png"
+              groups="cyberguard_360.group_cg_employee"/>
+
+    <!-- 9. Dashboard -->
+    <menuitem id="cg_menu_dashboard" name="Command Center" parent="cg_menu_root" sequence="1"
+              action="cg_dashboard_action" groups="cyberguard_360.group_cg_analyst"/>
+
+    <!-- 3. SOC -->
+    <menuitem id="cg_menu_soc" name="SOC" parent="cg_menu_root" sequence="10" groups="cyberguard_360.group_cg_analyst">
+        <menuitem id="cg_menu_alerts" name="Security Alerts" action="cg_alert_action" sequence="1"/>
+        <menuitem id="cg_menu_alerts_critical" name="Critical Alerts" action="cg_alert_critical_action" sequence="2"/>
+        <menuitem id="cg_menu_alerts_recurring" name="Recurring Patterns" action="cg_alert_recurring_action" sequence="3"/>
+        <menuitem id="cg_menu_agents" name="Agent Health" action="cg_agent_action" sequence="4"/>
+        <menuitem id="cg_menu_wazuh" name="Wazuh Connection" action="cg_wazuh_config_action" sequence="5"/>
+    </menuitem>
+
+    <!-- 4. AI analyst -->
+    <menuitem id="cg_menu_ai" name="AI Analyst" parent="cg_menu_root" sequence="20" groups="cyberguard_360.group_cg_analyst">
+        <menuitem id="cg_menu_ai_console" name="Analyst Console" action="cg_ai_console_action" sequence="1"/>
+        <menuitem id="cg_menu_ai_analyses" name="Saved Analyses" action="cg_ai_analysis_action" sequence="2"/>
+        <menuitem id="cg_menu_ai_daily" name="Daily and Executive Summaries" action="cg_ai_daily_action" sequence="3"/>
+    </menuitem>
+
+    <!-- 2. Assets -->
+    <menuitem id="cg_menu_assets" name="Assets" parent="cg_menu_root" sequence="30" action="cg_asset_action"/>
+
+    <!-- 5. Vulnerabilities -->
+    <menuitem id="cg_menu_vulns" name="Vulnerabilities" parent="cg_menu_root" sequence="40" groups="cyberguard_360.group_cg_analyst">
+        <menuitem id="cg_menu_vuln_register" name="Vulnerability Register" action="cg_vulnerability_action" sequence="1"/>
+        <menuitem id="cg_menu_cve_lookup" name="Search CVE Database" action="cg_cve_lookup_action" sequence="2"/>
+    </menuitem>
+
+    <!-- 6. Risk -->
+    <menuitem id="cg_menu_risk" name="Risk" parent="cg_menu_root" sequence="50" groups="cyberguard_360.group_cg_analyst">
+        <menuitem id="cg_menu_risk_register" name="Risk Register" action="cg_risk_action" sequence="1"/>
+        <menuitem id="cg_menu_risk_matrix" name="Risk Matrix" action="cg_risk_matrix_action" sequence="2"/>
+    </menuitem>
+
+    <!-- 7. Incidents -->
+    <menuitem id="cg_menu_incidents" name="Incidents" parent="cg_menu_root" sequence="60">
+        <menuitem id="cg_menu_incident_board" name="Incident Board" action="cg_incident_action" sequence="1" groups="cyberguard_360.group_cg_analyst"/>
+        <menuitem id="cg_menu_incident_report" name="Report an Incident" action="cg_incident_report_action" sequence="2"/>
+        <menuitem id="cg_menu_incident_mine" name="My Reported Incidents" action="cg_incident_my_action" sequence="3"/>
+    </menuitem>
+
+    <!-- 8. Threat intelligence -->
+    <menuitem id="cg_menu_threat" name="Threat Intel" parent="cg_menu_root" sequence="70" groups="cyberguard_360.group_cg_analyst">
+        <menuitem id="cg_menu_ioc" name="Indicators of Compromise" action="cg_ioc_action" sequence="1"/>
+        <menuitem id="cg_menu_mitre" name="MITRE ATT&amp;CK Coverage" action="cg_mitre_action" sequence="2"/>
+        <menuitem id="cg_menu_threat_reports" name="Threat Reports" action="cg_threat_report_action" sequence="3"/>
+    </menuitem>
+
+    <!-- 10. Notifications and automated response -->
+    <menuitem id="cg_menu_automation" name="Automation" parent="cg_menu_root" sequence="80">
+        <menuitem id="cg_menu_notifications" name="Notifications" action="cg_notification_action" sequence="1"/>
+        <menuitem id="cg_menu_response" name="Response Actions" action="cg_response_action_action" sequence="2" groups="cyberguard_360.group_cg_analyst"/>
+        <menuitem id="cg_menu_rules" name="Automation Rules" action="cg_automation_rule_action" sequence="3" groups="cyberguard_360.group_cg_analyst"/>
+    </menuitem>
+
+    <!-- 1. Administration -->
+    <menuitem id="cg_menu_admin" name="Administration" parent="cg_menu_root" sequence="90" groups="cyberguard_360.group_cg_manager">
+        <menuitem id="cg_menu_users" name="Users and Roles" action="cg_users_action" sequence="1" groups="base.group_system"/>
+        <menuitem id="cg_menu_logs" name="User Activity Logs" action="cg_activity_log_action" sequence="2"/>
+        <menuitem id="cg_menu_categories" name="Asset Categories" action="cg_asset_category_action" sequence="3"/>
+        <menuitem id="cg_menu_settings" name="Settings" action="cg_settings_action" sequence="4" groups="base.group_system"/>
+    </menuitem>
+</odoo>

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Asset categories (AM06) -->
+    <record id="asset_cat_server" model="cg.asset.category"><field name="name">Servers</field><field name="code">SRV</field><field name="sequence">1</field></record>
+    <record id="asset_cat_endpoint" model="cg.asset.category"><field name="name">Endpoints</field><field name="code">EP</field><field name="sequence">2</field></record>
+    <record id="asset_cat_network" model="cg.asset.category"><field name="name">Network Devices</field><field name="code">NET</field><field name="sequence">3</field></record>
+    <record id="asset_cat_cloud" model="cg.asset.category"><field name="name">Cloud Services</field><field name="code">CLD</field><field name="sequence">4</field></record>
+    <record id="asset_cat_iot" model="cg.asset.category"><field name="name">IoT and OT</field><field name="code">IOT</field><field name="sequence">5</field></record>
+
+    <!-- Wazuh connection, starting in demo mode -->
+    <record id="wazuh_config_default" model="cg.wazuh.config">
+        <field name="name">Wazuh</field>
+        <field name="mode">demo</field>
+        <field name="state">connected</field>
+        <field name="last_message">Demo simulator online.</field>
+    </record>
+
+    <!-- Automation rules (NR09-NR11) -->
+    <record id="rule_brute_incident" model="cg.automation.rule">
+        <field name="name">Brute force: create an incident</field>
+        <field name="sequence">1</field>
+        <field name="trigger">alert</field>
+        <field name="min_severity">medium</field>
+        <field name="keyword">brute force</field>
+        <field name="action">create_incident</field>
+        <field name="description">Related brute-force alerts are grouped into one incident per host and source address.</field>
+    </record>
+    <record id="rule_critical_incident" model="cg.automation.rule">
+        <field name="name">Critical alert: create an incident</field>
+        <field name="sequence">2</field>
+        <field name="trigger">alert</field>
+        <field name="min_severity">critical</field>
+        <field name="action">create_incident</field>
+    </record>
+    <record id="rule_repeat_block" model="cg.automation.rule">
+        <field name="name">Recurring attacker: recommend blocking the address</field>
+        <field name="sequence">3</field>
+        <field name="trigger">alert</field>
+        <field name="min_severity">low</field>
+        <field name="repeat_threshold">8</field>
+        <field name="action">recommend_response</field>
+        <field name="description">The block is only a recommendation until a manager approves it.</field>
+    </record>
+    <record id="rule_agent_offline" model="cg.automation.rule">
+        <field name="name">Agent offline: notify administrators</field>
+        <field name="sequence">4</field>
+        <field name="trigger">agent_offline</field>
+        <field name="min_severity" eval="False"/>
+        <field name="action">notify</field>
+        <field name="notify_role">cyberguard_360.group_cg_admin</field>
+    </record>
+    <record id="rule_critical_vuln" model="cg.automation.rule">
+        <field name="name">Critical vulnerability: notify managers</field>
+        <field name="sequence">5</field>
+        <field name="trigger">vulnerability</field>
+        <field name="min_severity">critical</field>
+        <field name="action">notify</field>
+        <field name="notify_role">cyberguard_360.group_cg_manager</field>
+    </record>
+    <record id="rule_overdue_incident" model="cg.automation.rule">
+        <field name="name">Incident past SLA: notify managers</field>
+        <field name="sequence">6</field>
+        <field name="trigger">incident_overdue</field>
+        <field name="min_severity" eval="False"/>
+        <field name="action">notify</field>
+        <field name="notify_role">cyberguard_360.group_cg_manager</field>
+    </record>
+</odoo>

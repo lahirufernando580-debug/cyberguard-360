@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="cyberguard_360.Dashboard">
+        <div t-attf-class="cg_app {{ state.theme === 'light' ? 'cg_light' : '' }}">
+            <div t-if="!d" class="cg_loading">Loading security posture</div>
+            <div t-else="" class="cg_wrap">
+
+                <!-- Top bar -->
+                <div class="cg_top">
+                    <div>
+                        <div class="cg_brand">CyberGuard 360</div>
+                        <div class="cg_title">Command Center</div>
+                        <div class="cg_sub">
+                            <span><t t-esc="greeting"/>, <t t-esc="d.user.name"/> · <t t-esc="d.user.role"/></span>
+                            <span t-attf-class="cg_status {{ d.wazuh.state === 'connected' ? 'cg_on' : 'cg_off' }}">
+                                <i class="cg_led"/>
+                                Wazuh <t t-esc="d.wazuh.state === 'connected' ? 'connected' : 'not connected'"/>
+                                <t t-if="d.wazuh.mode === 'demo'"> (demo simulator)</t>
+                            </span>
+                            <span t-if="d.wazuh.last_sync">Last sync <t t-esc="relativeTime(d.wazuh.last_sync)"/></span>
+                        </div>
+                    </div>
+                    <div class="cg_actions">
+                        <button class="cg_btn" t-on-click="sync" t-att-disabled="state.busy === 'sync'">
+                            <i class="fa fa-refresh" t-att-class="{ 'fa-spin': state.busy === 'sync' }"/> Sync Wazuh
+                        </button>
+                        <button class="cg_btn cg_ai" t-on-click="openConsole"><i class="fa fa-magic"/> AI Analyst</button>
+                        <button class="cg_btn cg_primary" t-on-click="report" t-att-disabled="state.busy === 'report'">
+                            <i class="fa fa-file-text-o"/> <t t-esc="state.busy === 'report' ? 'Generating' : 'Management report'"/>
+                        </button>
+                        <button class="cg_btn cg_icon" t-on-click="toggleTheme" title="Switch between dark and light" aria-label="Switch theme">
+                            <i t-attf-class="fa {{ state.theme === 'dark' ? 'fa-sun-o' : 'fa-moon-o' }}"/>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="cg_grid">
+
+                    <!-- Posture -->
+                    <div t-attf-class="cg_box cg_c4 cg_t_{{ postureTone }}">
+                        <div class="cg_box_head">
+                            <span class="cg_label">Security posture</span>
+                            <span class="cg_pill" t-esc="d.posture.grade"/>
+                        </div>
+                        <div class="cg_posture">
+                            <div class="cg_ring" t-attf-style="--v: {{ d.posture.score }}">
+                                <div class="cg_ring_in">
+                                    <div class="cg_ring_num" t-esc="d.posture.score"/>
+                                    <div class="cg_ring_cap">of 100</div>
+                                </div>
+                            </div>
+                            <div class="cg_factors">
+                                <t t-foreach="d.posture.factors" t-as="factor" t-key="factor.label">
+                                    <div class="cg_factor">
+                                        <span t-esc="factor.label"/>
+                                        <div t-attf-class="cg_bar cg_t_{{ factor.pct >= 75 ? 'critical' : factor.pct >= 40 ? 'high' : factor.pct > 0 ? 'medium' : 'ok' }}">
+                                            <span t-attf-style="width: {{ factor.pct }}%"/>
+                                        </div>
+                                        <span class="cg_pen">-<t t-esc="factor.penalty"/></span>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- KPI tiles -->
+                    <div class="cg_c8">
+                        <div class="cg_kpis">
+                            <t t-foreach="kpis" t-as="kpi" t-key="kpi.key">
+                                <button t-attf-class="cg_kpi {{ kpi.tone ? 'cg_t_' + kpi.tone : '' }}" t-on-click="() => this.openKpi(kpi.key)">
+                                    <span class="cg_label" t-esc="kpi.label"/>
+                                    <div>
+                                        <div class="cg_kpi_val" t-esc="kpi.value"/>
+                                        <div class="cg_kpi_note"><b t-if="kpi.noteValue !== undefined and kpi.noteValue !== ''" t-esc="kpi.noteValue"/> <t t-esc="kpi.note"/></div>
+                                    </div>
+                                </button>
+                            </t>
+                        </div>
+                    </div>
+
+                    <!-- Trend -->
+                    <div class="cg_box cg_c8">
+                        <div class="cg_box_head">
+                            <span class="cg_label">Alert volume · 14 days</span>
+                            <div class="cg_legend">
+                                <span class="cg_t_critical"><i/>Critical</span>
+                                <span class="cg_t_high"><i/>High</span>
+                                <span class="cg_t_medium"><i/>Medium</span>
+                                <span class="cg_t_low"><i/>Low</span>
+                            </div>
+                        </div>
+                        <div class="cg_trend">
+                            <t t-foreach="d.trend" t-as="day" t-key="day.label">
+                                <div class="cg_trend_col" t-att-title="day.label + ': ' + day.total + ' alerts'" t-on-click="() => this.open('Alerts', 'cg.alert', [], { search_default_group_day: 1 })">
+                                    <span class="cg_trend_n" t-esc="day.total"/>
+                                    <div class="cg_trend_stack" t-attf-style="height: {{ day.pct }}%">
+                                        <i class="s_low" t-attf-style="height: {{ segHeight(day, 'low') }}"/>
+                                        <i class="s_medium" t-attf-style="height: {{ segHeight(day, 'medium') }}"/>
+                                        <i class="s_high" t-attf-style="height: {{ segHeight(day, 'high') }}"/>
+                                        <i class="s_critical" t-attf-style="height: {{ segHeight(day, 'critical') }}"/>
+                                    </div>
+                                    <span class="cg_trend_x" t-esc="day.short"/>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+
+                    <!-- AI insights -->
+                    <div class="cg_box cg_c4">
+                        <div class="cg_box_head">
+                            <span class="cg_label">AI security insights</span>
+                            <span class="cg_ai_tag">AI</span>
+                        </div>
+                        <div class="cg_insights">
+                            <t t-foreach="d.insights" t-as="insight" t-key="insight_index">
+                                <button t-attf-class="cg_insight cg_t_{{ insight.tone }}" t-on-click="() => this.openInsight(insight)">
+                                    <div class="cg_insight_t" t-esc="insight.title"/>
+                                    <div class="cg_insight_b" t-esc="insight.text"/>
+                                </button>
+                            </t>
+                        </div>
+                    </div>
+
+                    <!-- Risk matrix -->
+                    <div class="cg_box cg_c4">
+                        <div class="cg_box_head">
+                            <span class="cg_label">Risk distribution</span>
+                            <button class="cg_link" t-on-click="() => this.action.doAction('cyberguard_360.cg_risk_matrix_action')">Open matrix</button>
+                        </div>
+                        <div class="cg_matrix">
+                            <div class="cg_matrix_y">Impact</div>
+                            <t t-foreach="d.matrix" t-as="row" t-key="row_index">
+                                <t t-foreach="row" t-as="cell" t-key="cell.likelihood">
+                                    <button t-attf-class="cg_cell cg_t_{{ cell.score > 16 ? 'critical' : cell.score > 9 ? 'high' : cell.score > 4 ? 'medium' : 'ok' }} {{ cell.count ? 'cg_has' : 'cg_none' }}"
+                                            t-att-title="'Likelihood ' + cell.likelihood + ' x impact ' + cell.impact + ': ' + cell.count + ' risk(s)'"
+                                            t-on-click="() => this.openCell(cell)" t-esc="cell.count"/>
+                                </t>
+                            </t>
+                            <div class="cg_matrix_x">Likelihood</div>
+                        </div>
+                        <div class="cg_seg_legend">
+                            <t t-foreach="d.risk_levels" t-as="lvl" t-key="lvl.key">
+                                <button t-attf-class="cg_t_{{ lvl.key === 'low' ? 'ok' : lvl.key }}" t-on-click="() => this.open(lvl.key + ' risks', 'cg.risk', [['level', '=', lvl.key], ['state', '!=', 'closed']])">
+                                    <b t-esc="lvl.count"/><span t-esc="lvl.key"/>
+                                </button>
+                            </t>
+                        </div>
+                    </div>
+
+                    <!-- Alert distribution + incidents -->
+                    <div class="cg_box cg_c4">
+                        <div class="cg_box_head"><span class="cg_label">Open alerts by severity</span></div>
+                        <div class="cg_seg">
+                            <t t-foreach="d.alert_severity" t-as="sev" t-key="sev.key">
+                                <i t-attf-class="cg_t_{{ sev.key }}" t-attf-style="width: {{ (sev.count / alertTotalOpen) * 100 }}%"/>
+                            </t>
+                        </div>
+                        <div class="cg_seg_legend">
+                            <t t-foreach="d.alert_severity" t-as="sev" t-key="sev.key">
+                                <button t-attf-class="cg_t_{{ sev.key }}" t-on-click="() => this.openSeverity(sev.key)">
+                                    <b t-esc="sev.count"/><span t-esc="sev.key"/>
+                                </button>
+                            </t>
+                        </div>
+                        <div class="cg_divider"/>
+                        <div class="cg_box_head"><span class="cg_label">Incidents by stage</span></div>
+                        <div class="cg_stages">
+                            <t t-foreach="d.incident_stages" t-as="stage" t-key="stage.key">
+                                <div t-attf-class="cg_stage {{ stage.count and stage.key !== 'closed' ? 'cg_live' : '' }}" role="button" t-on-click="() => this.openStage(stage)">
+                                    <b t-esc="stage.count"/><span t-esc="stage.label"/>
+                                </div>
+                            </t>
+                        </div>
+                        <div class="cg_divider"/>
+                        <div class="cg_box_head"><span class="cg_label">Incidents by category</span></div>
+                        <div class="cg_rows">
+                            <t t-foreach="d.incident_categories" t-as="cat" t-key="cat.key">
+                                <button class="cg_row cg_row_bar cg_t_low" t-on-click="() => this.open(cat.label, 'cg.incident', [['category', '=', cat.key]])">
+                                    <span class="cg_row_main" t-esc="cat.label"/>
+                                    <div class="cg_bar"><span t-attf-style="width: {{ Math.min(100, cat.count * 34) }}%"/></div>
+                                    <span class="cg_num" t-esc="cat.count"/>
+                                </button>
+                            </t>
+                        </div>
+                    </div>
+
+                    <!-- Asset risk overview -->
+                    <div class="cg_box cg_c4">
+                        <div class="cg_box_head">
+                            <span class="cg_label">Highest-risk assets</span>
+                            <button class="cg_link" t-on-click="() => this.openKpi('assets')">All assets</button>
+                        </div>
+                        <div class="cg_rows">
+                            <t t-foreach="d.top_assets" t-as="asset" t-key="asset.id">
+                                <button t-attf-class="cg_row cg_row_asset cg_t_{{ asset.band === 'low' ? 'ok' : asset.band }}" t-on-click="() => this.openRecord('cg.asset', asset.id)">
+                                    <div style="min-width: 0;">
+                                        <div class="cg_row_main cg_mono" t-esc="asset.name"/>
+                                        <div class="cg_row_sub"><t t-esc="asset.type"/> · <t t-esc="asset.alerts"/> alerts · <t t-esc="asset.vulns"/> vulns</div>
+                                    </div>
+                                    <div class="cg_bar"><span t-attf-style="width: {{ asset.score }}%"/></div>
+                                    <span class="cg_num cg_tone" t-esc="asset.score"/>
+                                </button>
+                            </t>
+                            <div t-if="!d.top_assets.length" class="cg_empty">No assets registered yet.</div>
+                        </div>
+                    </div>
+
+                    <!-- Live alerts -->
+                    <div class="cg_box cg_c6">
+                        <div class="cg_box_head">
+                            <span class="cg_label">Latest alerts</span>
+                            <button class="cg_link" t-on-click="() => this.openKpi('alerts')">View all</button>
+                        </div>
+                        <div class="cg_rows">
+                            <t t-foreach="d.recent_alerts" t-as="alert" t-key="alert.id">
+                                <button t-attf-class="cg_row cg_row_alert cg_t_{{ alert.severity }}" t-on-click="() => this.openRecord('cg.alert', alert.id)">
+                                    <span class="cg_sevdot"/>
+                                    <div style="min-width: 0;">
+                                        <div class="cg_row_main" t-esc="alert.name"/>
+                                        <div class="cg_row_sub"><span class="cg_mono" t-esc="alert.asset"/><t t-if="alert.src_ip"> · from <span class="cg_mono" t-esc="alert.src_ip"/></t></div>
+                                    </div>
+                                    <span class="cg_row_sub" t-esc="relativeTime(alert.time)"/>
+                                </button>
+                            </t>
+                            <div t-if="!d.recent_alerts.length" class="cg_empty">No alerts imported yet. Run a Wazuh sync.</div>
+                        </div>
+                    </div>
+
+                    <!-- Attackers and techniques -->
+                    <div class="cg_box cg_c3">
+                        <div class="cg_box_head"><span class="cg_label">Top sources · 7 days</span></div>
+                        <div class="cg_rows">
+                            <t t-foreach="d.top_attackers" t-as="src" t-key="src.ip">
+                                <button class="cg_row cg_row_bar cg_t_critical" t-on-click="() => this.openAttacker(src.ip)">
+                                    <span class="cg_row_main cg_mono" t-esc="src.ip"/>
+                                    <div class="cg_bar"><span t-attf-style="width: {{ src.pct }}%"/></div>
+                                    <span class="cg_num" t-esc="src.count"/>
+                                </button>
+                            </t>
+                            <div t-if="!d.top_attackers.length" class="cg_empty">No sources recorded.</div>
+                        </div>
+                        <div class="cg_divider"/>
+                        <div class="cg_box_head"><span class="cg_label">MITRE ATT&amp;CK</span></div>
+                        <div class="cg_rows">
+                            <t t-foreach="d.techniques" t-as="tech" t-key="tech.id">
+                                <button class="cg_row cg_row_bar cg_t_ai" t-att-title="tech.name" t-on-click="() => this.openTechnique(tech)">
+                                    <span class="cg_row_main"><span class="cg_mono" t-esc="tech.code"/> <t t-esc="tech.name"/></span>
+                                    <div class="cg_bar"><span t-attf-style="width: {{ tech.pct }}%"/></div>
+                                    <span class="cg_num" t-esc="tech.count"/>
+                                </button>
+                            </t>
+                        </div>
+                    </div>
+
+                    <!-- Remediation and notifications -->
+                    <div class="cg_box cg_c3">
+                        <div class="cg_box_head"><span class="cg_label">Remediation progress</span></div>
+                        <div class="cg_factor cg_t_ok" style="grid-template-columns: minmax(0, 1fr) 90px 44px;">
+                            <span>Vulnerabilities fixed</span>
+                            <div class="cg_bar"><span t-attf-style="width: {{ d.remediation.vuln_pct }}%"/></div>
+                            <span class="cg_pen"><t t-esc="d.remediation.vuln_fixed"/>/<t t-esc="d.remediation.vuln_total"/></span>
+                        </div>
+                        <div class="cg_factor cg_t_ok" style="grid-template-columns: minmax(0, 1fr) 90px 44px; margin-top: 10px;">
+                            <span>Risks treated</span>
+                            <div class="cg_bar"><span t-attf-style="width: {{ d.remediation.risk_pct }}%"/></div>
+                            <span class="cg_pen"><t t-esc="d.remediation.risk_closed"/>/<t t-esc="d.remediation.risk_total"/></span>
+                        </div>
+                        <div class="cg_divider"/>
+                        <div class="cg_box_head">
+                            <span class="cg_label">Notifications</span>
+                            <button class="cg_link" t-on-click="() => this.action.doAction('cyberguard_360.cg_notification_action')">All</button>
+                        </div>
+                        <div class="cg_rows">
+                            <t t-foreach="d.feed" t-as="note" t-key="note.id">
+                                <div t-attf-class="cg_row cg_row_alert cg_t_{{ note.severity }}" style="cursor: default;">
+                                    <span class="cg_sevdot"/>
+                                    <div style="min-width: 0;">
+                                        <div class="cg_row_main" t-att-title="note.name" t-esc="note.name"/>
+                                        <div class="cg_row_sub" t-esc="relativeTime(note.time)"/>
+                                    </div>
+                                    <span/>
+                                </div>
+                            </t>
+                            <div t-if="!d.feed.length" class="cg_empty">Nothing new.</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

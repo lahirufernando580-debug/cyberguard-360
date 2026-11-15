@@ -1,0 +1,176 @@
+// =====================================================================
+// CyberGuard 360 - glass (frosted) layer
+//
+// Loaded after cyberguard.scss. It only restyles surfaces: translucent
+// panels, a blurred backdrop, soft highlights. No layout, no logic.
+// Remove this file from the manifest to go back to the flat theme.
+// =====================================================================
+
+// ---------------------------------------------------------------- 1. console
+.cg_app {
+    // glass tokens (dark)
+    --cg-glass: rgba(255, 255, 255, 0.055);
+    --cg-glass-2: rgba(255, 255, 255, 0.035);
+    --cg-glass-strong: rgba(255, 255, 255, 0.10);
+    --cg-glass-border: rgba(255, 255, 255, 0.13);
+    --cg-glass-hi: rgba(255, 255, 255, 0.22);
+    --cg-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.38);
+    --cg-blur: blur(16px) saturate(160%);
+
+    // blurred colour orbs sit behind the panels so the glass has something to refract
+    background-color: var(--cg-bg);
+    background-image:
+        radial-gradient(900px 600px at 8% -8%, rgba(94, 234, 212, 0.20), transparent 62%),
+        radial-gradient(800px 560px at 96% 4%, rgba(167, 139, 250, 0.20), transparent 60%),
+        radial-gradient(900px 640px at 60% 108%, rgba(98, 168, 255, 0.16), transparent 62%),
+        radial-gradient(500px 360px at 0% 78%, rgba(255, 92, 122, 0.08), transparent 65%);
+    background-size: auto;
+    background-repeat: no-repeat;
+
+    &.cg_light {
+        --cg-glass: rgba(255, 255, 255, 0.52);
+        --cg-glass-2: rgba(255, 255, 255, 0.38);
+        --cg-glass-strong: rgba(255, 255, 255, 0.75);
+        --cg-glass-border: rgba(255, 255, 255, 0.85);
+        --cg-glass-hi: rgba(255, 255, 255, 0.95);
+        --cg-glass-shadow: 0 8px 28px rgba(31, 52, 90, 0.12);
+
+        background-image:
+            radial-gradient(900px 600px at 6% -6%, rgba(45, 212, 191, 0.30), transparent 62%),
+            radial-gradient(800px 560px at 98% 2%, rgba(167, 139, 250, 0.28), transparent 60%),
+            radial-gradient(900px 640px at 58% 108%, rgba(96, 165, 250, 0.26), transparent 62%),
+            radial-gradient(500px 360px at 0% 80%, rgba(251, 146, 160, 0.16), transparent 65%);
+    }
+
+    // ---- main glass panels
+    .cg_box,
+    .cg_kpi,
+    .cg_chat,
+    .cg_evi {
+        background: var(--cg-glass);
+        -webkit-backdrop-filter: var(--cg-blur);
+        backdrop-filter: var(--cg-blur);
+        border: 1px solid var(--cg-glass-border);
+        box-shadow: var(--cg-glass-shadow), inset 0 1px 0 var(--cg-glass-hi);
+    }
+    .cg_box, .cg_kpi, .cg_chat { border-radius: 16px; }
+    .cg_evi { border-top-width: 2px; }
+
+    .cg_kpi {
+        &:hover { background: var(--cg-glass-strong); box-shadow: var(--cg-glass-shadow), inset 0 1px 0 var(--cg-glass-hi), 0 0 0 1px var(--tone, var(--cg-accent)); }
+    }
+
+    // ---- nested / secondary surfaces (lighter glass, no extra blur to keep it fast)
+    .cg_insight,
+    .cg_stage,
+    .cg_msg.cg_bot {
+        background: var(--cg-glass-2);
+        border-color: var(--cg-glass-border);
+        box-shadow: inset 0 1px 0 var(--cg-glass-hi);
+    }
+    .cg_insight { border-left: 2px solid var(--tone); }
+    .cg_insight:hover { background: var(--cg-glass-strong); }
+
+    .cg_msg.cg_user {
+        background: color-mix(in srgb, var(--cg-accent) 16%, transparent);
+        box-shadow: inset 0 1px 0 var(--cg-glass-hi);
+    }
+
+    .cg_chat_head,
+    .cg_chat_in {
+        background: var(--cg-glass-2);
+        border-color: var(--cg-glass-border);
+    }
+
+    // ---- controls
+    .cg_btn {
+        background: var(--cg-glass);
+        -webkit-backdrop-filter: var(--cg-blur);
+        backdrop-filter: var(--cg-blur);
+        border-color: var(--cg-glass-border);
+        box-shadow: inset 0 1px 0 var(--cg-glass-hi);
+        &:hover { background: var(--cg-glass-strong); }
+        &.cg_primary {
+            background: linear-gradient(180deg, color-mix(in srgb, var(--cg-accent) 92%, white), var(--cg-accent));
+            border-color: color-mix(in srgb, var(--cg-accent) 70%, white);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 4px 16px color-mix(in srgb, var(--cg-accent) 38%, transparent);
+        }
+        &.cg_ai { background: color-mix(in srgb, var(--cg-ai) 16%, transparent); }
+    }
+    .cg_chipbtn { background: var(--cg-glass-2); border-color: var(--cg-glass-border); }
+    .cg_chipbtn.cg_active { background: var(--cg-ai-soft); }
+    .cg_toggle { background: var(--cg-glass-2); border-color: var(--cg-glass-border); -webkit-backdrop-filter: var(--cg-blur); backdrop-filter: var(--cg-blur); }
+    .cg_chat_in input,
+    .cg_field input {
+        background: var(--cg-glass-2);
+        border-color: var(--cg-glass-border);
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
+    }
+
+    // ---- small details
+    .cg_top { border-bottom-color: var(--cg-glass-border); }
+    .cg_divider, .cg_sec, .cg_report_head, .cg_row { border-color: var(--cg-glass-border); }
+    .cg_bar, .cg_seg, .cg_score_bar { background: var(--cg-glass-strong); }
+    .cg_pill { -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+    .cg_cell { box-shadow: inset 0 1px 0 var(--cg-glass-hi); }
+}
+
+// ---------------------------------------------------------------- 2. standard Odoo views
+// Soft gradient behind the kanban boards, frosted cards on top.
+.cg_kanban.o_kanban_view {
+    background-color: transparent;
+    background-image:
+        radial-gradient(800px 500px at 5% 0%, rgba(45, 212, 191, 0.14), transparent 65%),
+        radial-gradient(700px 480px at 100% 10%, rgba(167, 139, 250, 0.14), transparent 62%),
+        radial-gradient(800px 520px at 55% 110%, rgba(96, 165, 250, 0.12), transparent 65%);
+    background-repeat: no-repeat;
+}
+.cg_kanban {
+    .o_kanban_record {
+        background: rgba(255, 255, 255, 0.62);
+        -webkit-backdrop-filter: blur(14px) saturate(150%);
+        backdrop-filter: blur(14px) saturate(150%);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        border-radius: 14px;
+        box-shadow: 0 6px 22px rgba(31, 52, 90, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        transition: box-shadow .15s, transform .15s, background .15s;
+        &:hover { background: rgba(255, 255, 255, 0.82); box-shadow: 0 10px 28px rgba(31, 52, 90, 0.16), inset 0 1px 0 #fff; transform: translateY(-1px); }
+    }
+}
+
+// panels and report sections inside forms
+.cg_panel {
+    background: rgba(255, 255, 255, 0.58);
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
+    backdrop-filter: blur(12px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 14px;
+    box-shadow: 0 6px 20px rgba(31, 52, 90, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+.cg_panel_hypo { background: rgba(245, 240, 255, 0.62); }
+.cg_chip, .cg_chip_warn, .cg_chip_danger, .cg_chip_ok {
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+// ---------------------------------------------------------------- 3. fallbacks
+// Browsers without backdrop-filter: use a more opaque panel so text stays readable.
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .cg_app {
+        --cg-glass: var(--cg-surface);
+        --cg-glass-2: var(--cg-surface-2);
+        --cg-glass-strong: var(--cg-surface-2);
+    }
+    .cg_kanban .o_kanban_record, .cg_panel { background: rgba(255, 255, 255, 0.94); }
+}
+// Respect the operating-system "reduce transparency" setting.
+@media (prefers-reduced-transparency: reduce) {
+    .cg_app {
+        --cg-glass: var(--cg-surface);
+        --cg-glass-2: var(--cg-surface-2);
+        --cg-glass-strong: var(--cg-surface-2);
+        --cg-blur: none;
+    }
+    .cg_kanban .o_kanban_record, .cg_panel { background: #fff; -webkit-backdrop-filter: none; backdrop-filter: none; }
+}

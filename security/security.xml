@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="module_category_cyberguard" model="ir.module.category">
+        <field name="name">CyberGuard 360</field>
+        <field name="sequence">5</field>
+    </record>
+
+    <record id="res_groups_privilege_cyberguard" model="res.groups.privilege">
+        <field name="name">CyberGuard 360</field>
+        <field name="category_id" ref="module_category_cyberguard"/>
+    </record>
+
+    <!-- UM06: four roles, each one including the permissions of the role before it -->
+    <record id="group_cg_employee" model="res.groups">
+        <field name="name">Employee</field>
+        <field name="sequence">10</field>
+        <field name="privilege_id" ref="res_groups_privilege_cyberguard"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        <field name="comment">Can report security incidents and see the assets assigned to them.</field>
+    </record>
+    <record id="group_cg_analyst" model="res.groups">
+        <field name="name">Analyst</field>
+        <field name="sequence">20</field>
+        <field name="privilege_id" ref="res_groups_privilege_cyberguard"/>
+        <field name="implied_ids" eval="[(4, ref('group_cg_employee'))]"/>
+        <field name="comment">Investigates alerts, incidents, vulnerabilities and runs AI analyses.</field>
+    </record>
+    <record id="group_cg_manager" model="res.groups">
+        <field name="name">Manager</field>
+        <field name="sequence">30</field>
+        <field name="privilege_id" ref="res_groups_privilege_cyberguard"/>
+        <field name="implied_ids" eval="[(4, ref('group_cg_analyst'))]"/>
+        <field name="comment">Owns the risk register, approves response actions and reads the audit trail.</field>
+    </record>
+    <record id="group_cg_admin" model="res.groups">
+        <field name="name">Administrator</field>
+        <field name="sequence">40</field>
+        <field name="privilege_id" ref="res_groups_privilege_cyberguard"/>
+        <field name="implied_ids" eval="[(4, ref('group_cg_manager'))]"/>
+        <field name="user_ids" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
+        <field name="comment">Configures Wazuh, AI, automation rules and user access.</field>
+    </record>
+
+    <data noupdate="1">
+        <!-- UM07: employees only see what concerns them -->
+        <record id="rule_incident_employee" model="ir.rule">
+            <field name="name">Employees see incidents they reported</field>
+            <field name="model_id" ref="model_cg_incident"/>
+            <field name="domain_force">[('reporter_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('group_cg_employee'))]"/>
+        </record>
+        <record id="rule_incident_analyst" model="ir.rule">
+            <field name="name">Analysts see all incidents</field>
+            <field name="model_id" ref="model_cg_incident"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_cg_analyst'))]"/>
+        </record>
+        <record id="rule_asset_employee" model="ir.rule">
+            <field name="name">Employees see assets they own</field>
+            <field name="model_id" ref="model_cg_asset"/>
+            <field name="domain_force">[('owner_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('group_cg_employee'))]"/>
+        </record>
+        <record id="rule_asset_analyst" model="ir.rule">
+            <field name="name">Analysts see all assets</field>
+            <field name="model_id" ref="model_cg_asset"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_cg_analyst'))]"/>
+        </record>
+        <record id="rule_notification_recipient" model="ir.rule">
+            <field name="name">Users see notifications addressed to them</field>
+            <field name="model_id" ref="model_cg_notification"/>
+            <field name="domain_force">[('user_ids', 'in', [user.id])]</field>
+            <field name="groups" eval="[(4, ref('group_cg_employee'))]"/>
+        </record>
+        <record id="rule_notification_manager" model="ir.rule">
+            <field name="name">Managers see all notifications</field>
+            <field name="model_id" ref="model_cg_notification"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_cg_manager'))]"/>
+        </record>
+    </data>
+</odoo>

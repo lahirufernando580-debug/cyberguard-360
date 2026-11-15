@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Loads fictional sample data once, on first install only. -->
+    <function model="cg.demo" name="load"/>
+</odoo>
